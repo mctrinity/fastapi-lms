@@ -6,13 +6,14 @@ This documentation covers how to integrate **SCORM Cloud** with a **FastAPI back
 - Using **ngrok** to expose the local FastAPI server
 - Handling **SCORM webhooks** and **testing API requests**
 - Using **RSA keys for SCORM JWT authentication**
+- Required **Python dependencies**
 
 ---
 
 ## **2️⃣ Prerequisites**
 ### ✅ **Install Dependencies**
 ```bash
-pip install fastapi uvicorn requests python-dotenv pyjwt cryptography faiss-cpu numpy sentence-transformers
+pip install fastapi uvicorn requests python-dotenv pyjwt cryptography faiss-cpu numpy sentence-transformers httpx pandas scipy tqdm
 ```
 
 ### ✅ **Create Required Files**
@@ -42,7 +43,44 @@ You need a **ngrok account** to use ngrok for exposing your local server.
 
 ---
 
-## **3️⃣ Setting Up SCORM Cloud**
+## **3️⃣ Required Python Dependencies**
+Below are the necessary dependencies for SCORM Cloud integration with FastAPI:
+
+### ✅ **`requirements.txt`**
+```plaintext
+# Core FastAPI Dependencies
+fastapi
+uvicorn
+
+# OpenAI API and AI Model Dependencies
+openai
+whisper
+sentence-transformers  # ✅ Required for embeddings
+torch  # ✅ Needed for PyTorch-based models (used by sentence-transformers)
+
+# FAISS and Numerical Computing
+faiss-cpu
+numpy
+pandas
+scipy  # ✅ Useful for numerical computations & similarity search
+
+# FastAPI Data Validation & Environment Variables
+pydantic
+python-dotenv
+
+# Utility Libraries
+tqdm
+requests
+httpx  # ✅ Required by FastAPI for async HTTP requests
+
+# SCORM Cloud Authentication
+pyjwt  # ✅ Required for JWT authentication with SCORM Cloud
+cryptography  # ✅ Required for RSA-based JWT authentication (RS256)
+```
+
+---
+
+## **4️⃣ Setting Up SCORM Cloud**
 ### **1️⃣ Create a SCORM Cloud App**
 1. Log in to **SCORM Cloud** → Go to **Apps**
 2. Click **Create a New App**
@@ -61,7 +99,7 @@ You need a **ngrok account** to use ngrok for exposing your local server.
 
 ---
 
-## **4️⃣ Setting Up ngrok for Local Testing**
+## **5️⃣ Setting Up ngrok for Local Testing**
 ### ✅ **Install ngrok**
 ```bash
 brew install ngrok  # macOS
@@ -80,62 +118,6 @@ ngrok http 8000
 ```
 - Copy the **public URL** from ngrok output.
 - Use this URL in **SCORM Cloud Import Post Back URL**.
-
----
-
-## **5️⃣ FastAPI Code Updates (`app.py`)**
-
-### **✅ Configure FastAPI & CORS**
-```python
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-import os
-
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://cloud.scorm.com"],
-    allow_methods=["*"]
-)
-```
-
-### **✅ Generate SCORM JWT Token Using RSA**
-```python
-import jwt, time
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
-
-SCORM_PRIVATE_KEY_PATH = "backend/scorm_private_key.pem"
-SCORM_APP_ID = "your-app-id"
-
-def generate_scorm_token():
-    with open(SCORM_PRIVATE_KEY_PATH, "rb") as key_file:
-        private_key = serialization.load_pem_private_key(
-            key_file.read(), password=None, backend=default_backend()
-        )
-    
-    payload = {
-        "iss": SCORM_APP_ID,
-        "sub": SCORM_APP_ID,
-        "aud": "SCORM",
-        "exp": int(time.time()) + 3600
-    }
-    return jwt.encode(payload, private_key, algorithm="RS256")
-```
-
-### **✅ SCORM Webhook Listener (Handles SCORM Cloud Webhooks)**
-```python
-@app.api_route("/api/results", methods=["GET", "POST"])
-async def receive_scorm_results(request: Request):
-    if request.method == "GET":
-        params = dict(request.query_params)
-        print("🔍 Received SCORM Data via GET:", params)
-        return {"status": "success", "method": "GET", "data": params}
-
-    data = await request.json()
-    print("🔍 Received SCORM Data via POST:", data)
-    return {"status": "success", "method": "POST", "data": data}
-```
 
 ---
 
