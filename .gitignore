@@ -1,6 +1,7 @@
 # Ignore Python virtual environments
 venv/
 .env
+backend/document_store.py
 
 # Byte-compiled / cached
 __pycache__/
