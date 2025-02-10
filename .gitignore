@@ -1,0 +1,41 @@
+# Ignore Python virtual environments
+venv/
+.env
+
+# Byte-compiled / cached
+__pycache__/
+*.py[cod]
+*.so
+
+# Logs and database
+*.log
+db.sqlite3
+db/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore FastAPI Uvicorn logs
+*.pid
+*.db-journal
+
+# Ignore node_modules (for frontend)
+frontend/node_modules/
+frontend/.next/
+
+# Ignore package manager lock files
+backend/poetry.lock
+backend/Pipfile.lock
+frontend/package-lock.json
+frontend/yarn.lock
+
+# Ignore built frontend files
+frontend/out/
+frontend/build/
+frontend/.vercel/
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.iml
