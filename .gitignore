@@ -2,6 +2,7 @@
 venv/
 .env
 backend/document_store.py
+*/document_store
 
 # Byte-compiled / cached
 __pycache__/
