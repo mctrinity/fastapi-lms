@@ -1,11 +1,23 @@
+# Core FastAPI Dependencies
 fastapi
 uvicorn
+
+# OpenAI API and AI Model Dependencies
 openai
+whisper
+sentence-transformers  # ✅ Required for embeddings
+torch  # ✅ Needed for PyTorch-based models (used by sentence-transformers)
+
+# FAISS and Numerical Computing
 faiss-cpu
 numpy
-pydantic
 pandas
+scipy  # ✅ Useful for numerical computations & similarity search
+
+# FastAPI Data Validation & Environment Variables
+pydantic
 python-dotenv
+
+# Utility Libraries
 tqdm
 requests
-whisper
