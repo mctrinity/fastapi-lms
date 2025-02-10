@@ -4,6 +4,7 @@
 This project is a **Learning Management System (LMS)** that integrates **FastAPI (Backend)** and **Next.js (Frontend)** with **FAISS-based Retrieval-Augmented Generation (RAG)** using OpenAI's GPT model.
 
 ### **Tech Stack**
+- **TypeScript**: Strongly typed language for better maintainability.
 - **Backend:** FastAPI, FAISS, OpenAI API, SentenceTransformers
 - **Frontend:** Next.js, React, TailwindCSS
 - **Database:** FAISS-based Document Store (for Retrieval)
