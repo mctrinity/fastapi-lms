@@ -8,6 +8,7 @@ This documentation covers how to integrate **SCORM Cloud** with a **FastAPI back
 - Using **RSA keys for SCORM JWT authentication**
 - Required **Python dependencies**
 - **Comparison of SCORM Cloud, Azure, AWS, and TalentLMS**
+- **Uploading SCORM Content & Supported File Types**
 
 ---
 
@@ -44,7 +45,58 @@ You need a **ngrok account** to use ngrok for exposing your local server.
 
 ---
 
-## **3️⃣ Comparing Azure, AWS, SCORM Cloud, and TalentLMS**
+## **3️⃣ Uploading SCORM Content & Supported File Types**
+### **🔹 Supported SCORM File Types**
+SCORM Cloud and SCORM-compliant LMS platforms accept **SCORM packages** in `.zip` format. The `.zip` file must contain:
+- **SCORM Manifest File (`imsmanifest.xml`)** → Defines course structure
+- **HTML, CSS, JavaScript** → For interactive learning content
+- **Multimedia Files** (Videos, Images, Audio, PDFs)
+
+### **🔹 SCORM Versions Supported**
+| SCORM Format | Description |
+|--------------|------------|
+| **SCORM 1.2** | Most widely used, simpler but limited tracking |
+| **SCORM 2004 (2nd, 3rd, 4th Edition)** | Advanced tracking, sequencing, and reporting |
+
+### **🔹 Uploading SCORM Packages to SCORM Cloud**
+#### ✅ **Manual Upload**
+1. **Log in to SCORM Cloud** → **Courses > Add Course**
+2. **Click “Upload SCORM Package”**
+3. **Select a `.zip` SCORM file** and upload
+4. **Launch & Test the Course**
+
+#### ✅ **Upload via API**
+SCORM Cloud provides an API for automatic course uploads:
+```python
+import requests
+
+SCORM_CLOUD_API = "https://cloud.scorm.com/api/v2"
+SCORM_API_KEY = "your-api-key"
+
+def upload_scorm_course(file_path):
+    headers = {"Authorization": f"Bearer {SCORM_API_KEY}"}
+    files = {"file": open(file_path, "rb")}
+    
+    response = requests.post(f"{SCORM_CLOUD_API}/courses/importJobs", headers=headers, files=files)
+    
+    return response.json()
+
+# Example usage:
+print(upload_scorm_course("course.zip"))
+```
+
+### **🔹 Authoring Tools to Create SCORM Courses**
+If you don’t have SCORM content, you can **create courses** using these tools:
+| Tool | SCORM Support | Best For |
+|------|--------------|----------|
+| **Articulate Storyline** | ✅ SCORM 1.2 & 2004 | Interactive courses |
+| **Adobe Captivate** | ✅ SCORM 1.2 & 2004 | Software simulations |
+| **iSpring Suite** | ✅ SCORM 1.2 & 2004 | PowerPoint-based content |
+| **H5P** | ❌ (Requires LMS integration) | HTML5-based interactive content |
+
+---
+
+## **4️⃣ Comparing Azure, AWS, SCORM Cloud, and TalentLMS**
 Each of these platforms serves different purposes in **e-learning and SCORM content delivery**.
 
 ### **🔹 Overview of Each Platform**
@@ -54,38 +106,6 @@ Each of these platforms serves different purposes in **e-learning and SCORM cont
 | **Amazon Web Services (AWS)** | Cloud computing | ❌ No built-in SCORM | ❌ No native LMS | ✅ Can build a custom LMS using AWS tools |
 | **SCORM Cloud** | SCORM Hosting & Tracking | ✅ Fully SCORM-compliant | ❌ Not a full LMS | ✅ API access for custom SCORM integrations |
 | **TalentLMS** | Learning Management System (LMS) | ✅ Fully SCORM-compliant | ✅ Built-in LMS features | ❌ Limited customization |
-
-### **🔹 SCORM Support Comparison**
-| Platform | SCORM Upload | SCORM Tracking | SCORM API Support | Alternative Standards |
-|----------|--------------|---------------|------------------|----------------------|
-| **Azure** | ❌ No built-in SCORM | ❌ No native tracking | ❌ No SCORM API | xAPI (custom implementation) |
-| **AWS** | ❌ No built-in SCORM | ❌ No native tracking | ❌ No SCORM API | xAPI, S3-hosted SCORM packages |
-| **SCORM Cloud** | ✅ Yes | ✅ Yes | ✅ Full SCORM API | xAPI |
-| **TalentLMS** | ✅ Yes | ✅ Yes | ✅ API for SCORM courses | xAPI, AICC |
-
-💡 **If you need a full SCORM-compliant LMS**, TalentLMS or SCORM Cloud are the best choices.
-
-### **🔹 LMS & Course Management Features**
-| Feature | **Azure** | **AWS** | **SCORM Cloud** | **TalentLMS** |
-|---------|----------|---------|----------------|---------------|
-| **Course Creation** | ❌ No native support | ❌ No native support | ❌ No, only hosts SCORM | ✅ Yes |
-| **User Management** | ❌ Custom implementation | ❌ Custom implementation | ❌ No, only learners via API | ✅ Yes |
-| **Progress Tracking** | ❌ Requires custom logic | ❌ Requires custom logic | ✅ Yes (SCORM-based) | ✅ Yes |
-| **Assessments & Quizzes** | ❌ Requires custom logic | ❌ Requires custom logic | ❌ No | ✅ Yes |
-| **Reporting & Analytics** | ❌ Custom development required | ❌ Custom development required | ✅ Yes (Basic SCORM reports) | ✅ Yes (Advanced LMS reports) |
-
-💡 **If you need a full-featured LMS with user management, quizzes, and analytics,** **TalentLMS is the best choice.**  
-💡 **If you only need SCORM hosting and tracking,** **SCORM Cloud is better.**
-
-### **🔹 Custom Development & API Support**
-| Feature | **Azure** | **AWS** | **SCORM Cloud** | **TalentLMS** |
-|---------|----------|---------|----------------|---------------|
-| **REST API for LMS Features** | ❌ No native LMS | ❌ No native LMS | ✅ SCORM API | ✅ Full LMS API |
-| **Custom LMS Development** | ✅ Yes (Azure App Services) | ✅ Yes (AWS Lambda, S3, DynamoDB) | ❌ No, only SCORM | ❌ Limited |
-| **SCORM Launch via API** | ❌ Custom SCORM player needed | ❌ Custom SCORM player needed | ✅ Yes | ✅ Yes |
-
-💡 **If you need a fully customizable LMS,** Azure and AWS are great for building a **custom solution**.  
-💡 **If you want a plug-and-play LMS,** **TalentLMS is the best choice.**
 
 ### **🔹 Which One Should You Choose?**
 | Use Case | Best Option |
