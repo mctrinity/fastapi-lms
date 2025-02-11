@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
@@ -111,3 +111,17 @@ async def handle_query(request: QueryRequest):
 @app.get("/")
 async def home():
     return {"message": "FastAPI LMS is running!"}
+
+
+@app.api_route("/api/results", methods=["GET", "POST"])
+async def receive_scorm_results(request: Request):
+    if request.method == "GET":
+        params = dict(request.query_params)
+        print("🔍 Full Request Details:", request.url)
+        print("🔍 Extracted Query Parameters:", params)
+        return {"status": "success", "method": "GET", "data": params}
+
+    # Handle POST (if supported in future)
+    data = await request.json()
+    print("🔍 Received SCORM Cloud Data via POST:", data)
+    return {"status": "success", "method": "POST", "data": data}

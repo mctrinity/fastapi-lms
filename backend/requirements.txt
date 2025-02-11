@@ -21,3 +21,10 @@ python-dotenv
 # Utility Libraries
 tqdm
 requests
+
+# SCORM Cloud Authentication
+pyjwt  # ✅ Required for JWT authentication with SCORM Cloud
+cryptography  # ✅ Required for RSA-based JWT authentication (RS256)
+
+# Additional Dependencies (Ensure Installed)
+httpx  # ✅ Required by FastAPI for async HTTP requests
