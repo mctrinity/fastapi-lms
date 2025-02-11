@@ -139,3 +139,61 @@ async def handle_query(request: QueryRequest):
 @app.get("/")
 async def home():
     return {"message": "FastAPI LMS is running!"}
+
+
+# ✅ Fetch SCORM Courses from SCORM Cloud
+@app.get("/scorm-courses")
+async def get_scorm_courses():
+    token = generate_scorm_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(f"https://cloud.scorm.com/api/v2/courses", headers=headers)
+
+    if response.status_code == 200:
+        return response.json()
+
+    raise HTTPException(
+        status_code=response.status_code,
+        detail=f"Failed to fetch SCORM courses: {response.text}",
+    )
+
+
+# ✅ Generate SCORM Course Launch Link
+@app.get("/scorm-launch/{course_id}")
+async def launch_scorm_course(course_id: str):
+    token = generate_scorm_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    data = {
+        "courseId": course_id,
+        "learnerId": "test-user",
+        "email": "test@example.com",
+    }
+
+    response = requests.post(
+        f"https://cloud.scorm.com/api/v2/registrations", headers=headers, json=data
+    )
+
+    if response.status_code == 200:
+        response_data = response.json()
+        launch_url = response_data.get("launchLink")  # ✅ Safe extraction
+
+        if launch_url:
+            return {"launch_url": launch_url}
+
+    raise HTTPException(
+        status_code=response.status_code,
+        detail=f"Failed to launch SCORM course: {response.text}",
+    )
+
+
+@app.api_route("/api/results", methods=["GET", "POST"])
+async def receive_scorm_results(request: Request):
+    if request.method == "GET":
+        # Extract SCORM Cloud data from query parameters
+        params = dict(request.query_params)
+        print("🔍 Received SCORM Cloud Data via GET:", params)
+        return {"status": "success", "method": "GET", "data": params}
+
+    # Handle POST (if SCORM Cloud ever supports it)
+    data = await request.json()
+    print("🔍 Received SCORM Cloud Data via POST:", data)
+    return {"status": "success", "method": "POST", "data": data}
