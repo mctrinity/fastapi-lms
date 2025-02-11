@@ -4,34 +4,45 @@ from pydantic import BaseModel
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+import requests
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from sklearn.preprocessing import normalize
 from document_store import documents  # ✅ Import external document store
+import jwt  # ✅ Install using: pip install pyjwt
+import time
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 
 # Load environment variables from .env
 load_dotenv()
 
-# Retrieve API Key from .env
+# Retrieve API Keys from .env
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-os.environ["TOKENIZERS_PARALLELISM"] = (
-    "false"  # ✅ Prevents deadlocks in Hugging Face tokenizers
-)
+SCORM_APP_ID = os.getenv("SCORM_APP_ID")
+SCORM_PRIVATE_KEY_PATH = os.getenv("SCORM_PRIVATE_KEY_PATH")
 
-# Ensure API key is available
+# Ensure API keys are available
 if not OPENAI_API_KEY:
     raise ValueError("🚨 OPENAI_API_KEY is missing! Check your .env file.")
+
+if not SCORM_APP_ID or not SCORM_PRIVATE_KEY_PATH:
+    raise ValueError(
+        "🚨 SCORM_APP_ID or SCORM_PRIVATE_KEY_PATH is missing! Check your .env file."
+    )
 
 # Initialize OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 app = FastAPI()
 
-# ✅ Enable CORS for frontend requests
+# ✅ Enable CORS for frontend requests + SCORM Cloud
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://cloud.scorm.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,32 +63,49 @@ embeddings = embed_model.encode(documents)
 faiss_index.add(np.array(embeddings, dtype=np.float32))
 
 
-# ✅ Function to Perform Retrieval-Augmented Generation (RAG)
-async def retrieve_and_generate(
-    query: str, top_k: int = 1
-):  # 🔥 Get only 1 most relevant doc
-    query_embedding = embed_model.encode([query], normalize_embeddings=True)
+# ✅ Generate SCORM Cloud Authentication Token using RS256
+def generate_scorm_token():
+    """Generate a valid JWT token for SCORM Cloud API authentication using RS256"""
+    if not SCORM_PRIVATE_KEY_PATH or not os.path.exists(SCORM_PRIVATE_KEY_PATH):
+        raise FileNotFoundError(
+            f"🚨 RSA private key not found at {SCORM_PRIVATE_KEY_PATH}"
+        )
 
+    with open(SCORM_PRIVATE_KEY_PATH, "rb") as key_file:
+        private_key = serialization.load_pem_private_key(
+            key_file.read(), password=None, backend=default_backend()
+        )
+
+    payload = {
+        "iss": SCORM_APP_ID,
+        "sub": SCORM_APP_ID,
+        "aud": "SCORM",
+        "exp": int(time.time()) + 3600,  # Token expires in 1 hour
+    }
+
+    token = jwt.encode(payload, private_key, algorithm="RS256")
+
+    # Debugging Output
+    print(f"\n🔍 Generated JWT Payload: {payload}")
+    print(f"🔑 Generated JWT Token: {token}\n")
+
+    return token
+
+
+# ✅ Function to Perform Retrieval-Augmented Generation (RAG)
+async def retrieve_and_generate(query: str, top_k: int = 1):
+    query_embedding = embed_model.encode([query], normalize_embeddings=True)
     distances, indices = faiss_index.search(
         np.array(query_embedding, dtype=np.float32), top_k
     )
-
-    # Since we use cosine similarity, FAISS now returns similarity scores directly
-    best_match_idx = indices[0][0]  # Take only the highest-ranked document
-    best_match_score = distances[0][0]  # Get the highest similarity score
-
-    # Retrieve the best matching document
+    best_match_idx = indices[0][0]
     retrieved_doc = documents[best_match_idx]
-
-    # Debugging Output
-    print("\n🔍 FAISS DEBUGGING RESULTS:")
-    print(f"📌 Score: {best_match_score:.4f} | Document: {retrieved_doc}")
 
     prompt = f"""You are an AI assistant. Answer the question based on the following information:
     
     Question: {query}
     Retrieved Information: {retrieved_doc}
-
+    
     Provide a detailed response.
     Answer:
     """
@@ -111,17 +139,3 @@ async def handle_query(request: QueryRequest):
 @app.get("/")
 async def home():
     return {"message": "FastAPI LMS is running!"}
-
-
-@app.api_route("/api/results", methods=["GET", "POST"])
-async def receive_scorm_results(request: Request):
-    if request.method == "GET":
-        params = dict(request.query_params)
-        print("🔍 Full Request Details:", request.url)
-        print("🔍 Extracted Query Parameters:", params)
-        return {"status": "success", "method": "GET", "data": params}
-
-    # Handle POST (if supported in future)
-    data = await request.json()
-    print("🔍 Received SCORM Cloud Data via POST:", data)
-    return {"status": "success", "method": "POST", "data": data}
