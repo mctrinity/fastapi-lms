@@ -3,6 +3,7 @@ venv/
 .env
 backend/document_store.py
 */document_store
+backend/scorm*
 
 # Byte-compiled / cached
 __pycache__/
